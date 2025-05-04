@@ -1,0 +1,344 @@
+services:
+#  spring-app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: spring-app
+#    restart: always
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=prod
+#    depends_on:
+#      mysql:
+#        condition: service_healthy
+#      valkey-1 :
+#        condition: service_started
+#    networks:
+#      - valkey-net
+
+  mysql:
+    image: mysql:latest
+    container_name: my-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pw
+      MYSQL_DATABASE: test_db
+      MYSQL_USER: test_id
+      MYSQL_PASSWORD: test_pw
+      MYSQL_PID_DIR: /var/run/mysqld/custom-pid
+    ports:
+      - "3306:3306"
+    volumes:
+      - type: volume
+        source: mysql-data
+        target: /var/lib/mysql
+      - type: bind
+        source: ./mysql-init
+        target: /docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "test_id", "-ptest_pw" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - valkey-net
+
+  # valkey cluster nodes
+  valkey-1:
+    image: valkey/valkey:latest
+    container_name: valkey-1
+    ports:
+      - "7001:7001"      # client port
+      - "17001:17001"    # cluster bus port
+    command: >
+      valkey-server
+      --port 7001
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --cluster-announce-port 7001
+      --cluster-announce-bus-port 17001
+      --requirepass test_pw
+      --masterauth test_pw
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "-a", "test_pw", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - valkey1-data:/data
+    networks:
+      - valkey-net
+
+  valkey-2:
+    image: valkey/valkey:latest
+    container_name: valkey-2
+    ports:
+      - "7002:7002"
+      - "17002:17002"
+    command: >
+      valkey-server
+      --port 7002
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --cluster-announce-port 7002
+      --cluster-announce-bus-port 17002
+      --requirepass test_pw
+      --masterauth test_pw
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "-a", "test_pw", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - valkey2-data:/data
+    networks:
+      - valkey-net
+
+  valkey-3:
+    image: valkey/valkey:latest
+    container_name: valkey-3
+    ports:
+      - "7003:7003"
+      - "17003:17003"
+    command: >
+      valkey-server
+      --port 7003
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --cluster-announce-port 7003
+      --cluster-announce-bus-port 17003
+      --requirepass test_pw
+      --masterauth test_pw
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "-a", "test_pw", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - valkey3-data:/data
+    networks:
+      - valkey-net
+
+  valkey-4:
+    image: valkey/valkey:latest
+    container_name: valkey-4
+    ports:
+      - "7004:7004"
+      - "17004:17004"
+    command: >
+      valkey-server
+      --port 7004
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --cluster-announce-port 7004
+      --cluster-announce-bus-port 17004
+      --requirepass test_pw
+      --masterauth test_pw
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "-a", "test_pw", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - valkey4-data:/data
+    networks:
+      - valkey-net
+    depends_on:
+      - valkey-1
+
+  valkey-5:
+    image: valkey/valkey:latest
+    container_name: valkey-5
+    ports:
+      - "7005:7005"
+      - "17005:17005"
+    command: >
+      valkey-server
+      --port 7005
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --cluster-announce-port 7005
+      --cluster-announce-bus-port 17005
+      --requirepass test_pw
+      --masterauth test_pw
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "-a", "test_pw", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - valkey5-data:/data
+    networks:
+      - valkey-net
+    depends_on:
+      - valkey-2
+
+  valkey-6:
+    image: valkey/valkey:latest
+    container_name: valkey-6
+    ports:
+      - "7006:7006"
+      - "17006:17006"
+    command: >
+      valkey-server
+      --port 7006
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --cluster-announce-port 7006
+      --cluster-announce-bus-port 17006
+      --requirepass test_pw
+      --masterauth test_pw
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "-a", "test_pw", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - valkey6-data:/data
+    networks:
+      - valkey-net
+    depends_on:
+      - valkey-3
+
+  cluster-init:
+    image: valkey/valkey:latest
+    container_name: cluster-init
+    depends_on:
+      - valkey-1
+      - valkey-2
+      - valkey-3
+      - valkey-4
+      - valkey-5
+      - valkey-6
+    command: >
+      bash -c '
+        export REDISCLI_AUTH=test_pw;
+        echo "Preparing cluster nodes...";
+        valkey-cli -h valkey-1 FLUSHALL;
+        valkey-cli -h valkey-1 CLUSTER RESET;
+        valkey-cli -h valkey-2 FLUSHALL;
+        valkey-cli -h valkey-2 CLUSTER RESET;
+        valkey-cli -h valkey-3 FLUSHALL;
+        valkey-cli -h valkey-3 CLUSTER RESET;
+        valkey-cli -h valkey-4 FLUSHALL;
+        valkey-cli -h valkey-4 CLUSTER RESET;
+        valkey-cli -h valkey-5 FLUSHALL;
+        valkey-cli -h valkey-5 CLUSTER RESET;
+        valkey-cli -h valkey-6 FLUSHALL;
+        valkey-cli -h valkey-6 CLUSTER RESET;
+        echo "Creating cluster...";
+        valkey-cli --cluster create valkey-1:7001 valkey-2:7002 valkey-3:7003 valkey-4:7004 valkey-5:7005 valkey-6:7006 --cluster-replicas 1 --cluster-yes;
+        echo "Cluster creation completed";
+      '
+    networks:
+      - valkey-net
+    restart: on-failure
+
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    container_name: redis-insight
+    volumes:
+      - redis-insight-data:/data  # 볼륨 추가
+    platform: linux/arm64
+    ports:
+      - "5540:5540"
+    networks:
+      - valkey-net
+    depends_on:
+      - valkey-1
+
+  # Redis Exporter - Valkey 모니터링용
+  redis-exporter:
+    image: oliver006/redis_exporter
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=valkey-1:7001
+      - REDIS_PASSWORD=test_pw
+    ports:
+      - "9121:9121"
+    networks:
+      - valkey-net
+    depends_on:
+      - valkey-1
+
+  # MySQL Exporter
+  mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: mysql-exporter
+    volumes:
+      - ./mysql-exporter-config/.my.cnf:/etc/mysqld-exporter/.my.cnf
+    command: --config.my-cnf=/etc/mysqld-exporter/.my.cnf
+    restart: unless-stopped
+    ports:
+      - "9104:9104"
+    networks:
+      - valkey-net
+    depends_on:
+      - mysql
+
+  # Prometheus 설정
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - valkey-net
+    depends_on:
+      - mysql-exporter
+      - redis-exporter
+
+  # Grafana 설정
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - valkey-net
+    depends_on:
+      - prometheus
+
+networks:
+  valkey-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  valkey1-data:
+  valkey2-data:
+  valkey3-data:
+  valkey4-data:
+  valkey5-data:
+  valkey6-data:
+  prometheus-data:
+  grafana-data:
+  redis-insight-data:

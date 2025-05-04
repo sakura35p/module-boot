@@ -1,0 +1,17 @@
+plugins {
+    id "java-library"
+    id "io.spring.dependency-management"
+}
+
+dependencies {
+
+    api(project(":domain:article"))
+    api(project(":domain:comment"))
+
+    implementation(project(":domain:metadata"))
+    implementation(project(":domain:user"))
+
+    implementation("org.springframework:spring-context")
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}

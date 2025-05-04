@@ -1,0 +1,1 @@
+docker build -t module-boot-app . --no-cache
